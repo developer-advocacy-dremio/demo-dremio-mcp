@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  dremio:
+    image: dremio/dremio-oss:latest
+    ports:
+      - "9047:9047"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9047"]
+      interval: 10s
+      retries: 10
+
+  pat-fetcher:
+    image: alpine:latest
+    depends_on:
+      dremio:
+        condition: service_healthy
+    environment:
+      DREMIO_HOST: http://dremio:9047
+      DREMIO_USERNAME: dremio
+      DREMIO_PASSWORD: dremio123
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      apk add --no-cache curl jq &&
+      echo "🔐 Logging in to Dremio at $DREMIO_HOST" &&
+      LOGIN=$(curl -s -X POST "$DREMIO_HOST/apiv2/login" -H "Content-Type: application/json" -d "{\"userName\": \"$DREMIO_USERNAME\", \"password\": \"$DREMIO_PASSWORD\"}") &&
+      TOKEN=$(echo $LOGIN | jq -r .token) &&
+      echo "✅ Login succeeded. Token: $TOKEN" &&
+      PAT=$(curl -s -X POST "$DREMIO_HOST/apiv2/personalaccesstoken" -H "Authorization: _dremio$TOKEN" -H "Content-Type: application/json" -d "{\"label\": \"docker-pat\"}") &&
+      echo "🎫 Your PAT Token:" &&
+      echo $PAT | jq -r .token
+
+  mcp-client:
+    image: alexmerced/demo_dremio_mcp:version-00-01
+    ports:
+      - "5000:5000"
+    depends_on:
+      - dremio
+    environment:
+      # Dremio Config
+      DREMIO_URI: http://dremio:9047
+      DREMIO_PAT: "<INSERT PAT HERE>"
+
+      # LLM Config
+      LLM_MODEL: openai:gpt-4.1
+      DETAILED_OUTPUT: "false"
+
+      # API Keys
+      OPENAI_API_KEY: ...
+      ANTHROPIC_API_KEY: ...
+      GOOGLE_API_KEY: ...
+      MISTRAL_API_KEY: ...
+      COHERE_API_KEY: ...
+      TOGETHER_API_KEY: ...
+      FIREWORKS_API_KEY: ...
+      AZURE_OPENAI_API_KEY: ...
+      AZURE_OPENAI_ENDPOINT: ...
+      AWS_ACCESS_KEY_ID: ...
+      AWS_SECRET_ACCESS_KEY: ...
+      AWS_REGION: us-east-1
