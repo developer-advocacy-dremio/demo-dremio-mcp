@@ -1,0 +1,13 @@
+{
+  "Dremio": {
+    "command": "/root/.local/bin/uv",
+    "args": [
+        "run",
+        "--directory",
+        "/app/dremio-mcp",
+        "dremio-mcp-server",
+        "run"
+    ],
+    "transport": "stdio"
+  }
+}

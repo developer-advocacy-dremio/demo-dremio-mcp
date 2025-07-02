@@ -11,24 +11,18 @@ services:
       retries: 10
 
   pat-fetcher:
-    image: alpine:latest
+    image: python:3.11-slim
     depends_on:
       dremio:
         condition: service_healthy
     environment:
       DREMIO_HOST: http://dremio:9047
       DREMIO_USERNAME: dremio
-      DREMIO_PASSWORD: dremio123
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      apk add --no-cache curl jq &&
-      echo "🔐 Logging in to Dremio at $DREMIO_HOST" &&
-      LOGIN=$(curl -s -X POST "$DREMIO_HOST/apiv2/login" -H "Content-Type: application/json" -d "{\"userName\": \"$DREMIO_USERNAME\", \"password\": \"$DREMIO_PASSWORD\"}") &&
-      TOKEN=$(echo $LOGIN | jq -r .token) &&
-      echo "✅ Login succeeded. Token: $TOKEN" &&
-      PAT=$(curl -s -X POST "$DREMIO_HOST/apiv2/personalaccesstoken" -H "Authorization: _dremio$TOKEN" -H "Content-Type: application/json" -d "{\"label\": \"docker-pat\"}") &&
-      echo "🎫 Your PAT Token:" &&
-      echo $PAT | jq -r .token
+      DREMIO_PASSWORD: dremio1995
+    volumes:
+      - ./get_pat.py:/app/get_pat.py
+    working_dir: /app
+    command: /bin/sh -c "pip install requests && python get_pat.py"
 
   mcp-client:
     image: alexmerced/demo_dremio_mcp:version-00-01
@@ -36,10 +30,12 @@ services:
       - "5000:5000"
     depends_on:
       - dremio
+    volumes:
+      - ./mcp_servers.json:/app/mcp_servers.json
     environment:
       # Dremio Config
       DREMIO_URI: http://dremio:9047
-      DREMIO_PAT: "<INSERT PAT HERE>"
+      DREMIO_PAT: ...
 
       # LLM Config
       LLM_MODEL: openai:gpt-4.1
