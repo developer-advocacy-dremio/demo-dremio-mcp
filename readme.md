@@ -6,7 +6,7 @@ Follow these steps to get up and running with a local Dremio instance, generate 
 
 ## ✅ Step 1: Start the Dremio Service
 
-In your project directory (where `docker-compose.yml` is located), start only the Dremio container:
+After cloning this repo to your local machine, In your project directory (where `docker-compose.yml` is located), start only the Dremio container:
 
 ```bash
 docker compose up -d dremio
